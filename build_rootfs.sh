@@ -60,12 +60,12 @@ if [ "$distro" = "debian" ]; then
   debootstrap --arch $arch --components=main,contrib,non-free,non-free-firmware "$release_name" "$rootfs_dir" http://deb.debian.org/debian/
   chroot_script="/opt/setup_rootfs.sh"
 
-elif [ "$distro" = "ubuntu" ]; then 
+elif [ "$distro" = "ubuntu" ]; then
   print_info "bootstraping ubuntu chroot"
   repo_url="http://archive.ubuntu.com/ubuntu"
   if [ "$arch" = "amd64" ]; then
     repo_url="http://archive.ubuntu.com/ubuntu"
-  else 
+  else
     repo_url="http://ports.ubuntu.com"
   fi
   debootstrap --arch $arch "$release_name" "$rootfs_dir" "$repo_url"
@@ -87,7 +87,7 @@ elif [ "$distro" = "alpine" ]; then
 
   print_info "bootstraping alpine chroot"
   real_arch="x86_64"
-  if [ "$arch" = "arm64" ]; then 
+  if [ "$arch" = "arm64" ]; then
     real_arch="aarch64"
   fi
   $apk_static \
@@ -105,7 +105,12 @@ fi
 
 print_info "copying rootfs setup scripts"
 cp -arv rootfs/* "$rootfs_dir"
-cp /etc/resolv.conf "$rootfs_dir/etc/resolv.conf"
+rm -f "$rootfs_dir/etc/resolv.conf"
+cat > "$rootfs_dir/etc/resolv.conf" <<'EOF'
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+EOF
+
 
 print_info "creating bind mounts for chroot"
 trap unmount_all EXIT
@@ -124,7 +129,7 @@ chroot_command="$chroot_script \
   '$DEBUG' '$release_name' '$packages' \
   '$hostname' '$root_passwd' '$username' \
   '$user_passwd' '$enable_root' '$disable_base' \
-  '$arch'" 
+  '$arch'"
 
 LC_ALL=C chroot $rootfs_dir /bin/sh -c "${chroot_command}"
 
